@@ -21,7 +21,7 @@ def q2(maze, start, end):
         s = int(ss[0])
         e = int(ss[1])
         for i in range(s, e + 1):
-            for i_len in range(1, len(str(i))):
+            for i_len in range(1, int(len(str(i))/2) + 1):
                 if len(str(i)) % i_len == 0:
                     seg = int(len(str(i)) / i_len)
                     if str(i)[0:i_len] * seg == str(i):
