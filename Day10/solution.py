@@ -1,6 +1,7 @@
 import re
 import copy
 from itertools import combinations
+import z3
 
 def get_diff(buttons):
     diff = []
@@ -27,86 +28,27 @@ def q1(maze):
                 result += num_buttons
                 break
     return result
-    
-def is_done(joltage):
-    ret = 0
-    for n in joltage:
-        if n != 0:
-            ret += 1
-    return ret
 
-def get_buttons(buttons, step):
-    valid_buttons = []
-    for button in buttons:
-        if len(button) == step:
-            valid_buttons.append(button)
-    return valid_buttons
-
-def joltage_sum(button, joltage):
-    result = 0
-    for b in button:
-        result += joltage[b]
-    return result
-
-def push(buttons, step, joltage):
-    valid_buttons = get_buttons(buttons, step)
-    max_push = 0
-    push_map = {}
-    for button in valid_buttons:
-        min_joltage = max(joltage)
-        for b in button:
-            min_joltage = min(min_joltage, joltage[b])
-        if min_joltage in push_map:
-            push_map[min_joltage].append(button)
-        else:
-            push_map[min_joltage] = [button]
-        max_push = max(max_push, min_joltage)
-    
-    if max_push > 0:
-        i = 0
-        b_sum = 0
-        for bi in range(len(push_map[max_push])):
-            print("check: ", push_map[max_push], bi)
-            j_sum = joltage_sum(push_map[max_push][bi], joltage)
-            if b_sum < j_sum:
-                b_sum = j_sum
-                i = bi
-
-        print("push: ", max_push, push_map[max_push][i])
-        for b in push_map[max_push][i]:
-            joltage[b] = joltage[b] - max_push
-    
-    return max_push, joltage
-        
-
-def q2(maze):
+def q2_z3(maze):
     result = 0
     for r in maze:
-        buttons = r[1]
-        joltage = r[2]
-        max_b_len = 0
-        for b in buttons:
-            max_b_len = max(max_b_len, len(b))
-        joltage_copy = copy.deepcopy(joltage)
-        
-        non_zero = is_done(joltage_copy)
-        step = min(non_zero, max_b_len)
-        while non_zero > 0:
-            print("do: ", r[2], joltage_copy)
-            max_push, joltage_copy = push(buttons, step, joltage_copy)
-            result += max_push
-            if is_done(joltage_copy) == 0:
-                print("done: ", r)
-                break
-            if max_push == 0:
-                step -= 1
-                if step <= 0:
-                    return 0
-            else:
-                step = min(step, is_done(joltage_copy))
+        s = z3.Optimize()
+        # var for each button
+        vars = [z3.Int(f'button_{i}') for i in range(len(r[1]))]
+        # press >= 0
+        for v in vars:
+            s.add(v>=0)
+        for li in range(len(r[2])):
+            sum_level = sum(vars[bi] for bi in range(len(r[1])) if li in r[1][bi])
+            s.add(sum_level == r[2][li])
+        s.minimize(z3.Sum(vars))
+        if s.check() == z3.sat:
+            m = s.model()
+            result += sum(m[i].as_long() for i in m)
+
     return result
 
-with open("./input.txt", "r") as file:
+with open("./input2.txt", "r") as file:
     maze = []
     for line in file:
         line = line.strip()
@@ -136,4 +78,4 @@ with open("./input.txt", "r") as file:
     #s = set(s1).symmetric_difference(set(s2))
     #print(list(s))
     print("part 1: ", q1(maze))
-    print("part 2: ", q2(maze))
+    print("part 2: ", q2_z3(maze))
