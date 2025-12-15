@@ -38,6 +38,7 @@ def q2_z3(maze):
         # press >= 0
         for v in vars:
             s.add(v>=0)
+        # press matchs level
         for li in range(len(r[2])):
             sum_level = sum(vars[bi] for bi in range(len(r[1])) if li in r[1][bi])
             s.add(sum_level == r[2][li])
